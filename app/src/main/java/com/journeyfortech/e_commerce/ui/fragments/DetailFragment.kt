@@ -7,14 +7,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.journeyfortech.e_commerce.R
+import com.journeyfortech.e_commerce.data.model.product.ProductResponseItem
 import com.journeyfortech.e_commerce.data.model.slider
 import com.journeyfortech.e_commerce.databinding.FragmentDetailBinding
 import com.journeyfortech.e_commerce.ui.HomeActivity
@@ -25,6 +26,7 @@ import com.journeyfortech.e_commerce.viewModel.DetailViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -40,7 +42,7 @@ class DetailFragment @Inject constructor() : BaseFragment() {
     @Inject
     lateinit var similarItemsAdapter: SimilarProductAdapter
 
-    private val args: DetailFragmentArgs by navArgs()
+    private var isFav: Boolean = true
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -59,10 +61,6 @@ class DetailFragment @Inject constructor() : BaseFragment() {
             hideToolBar()
         }
         setUpRecyclerView()
-        setFavouriteFabStatus()
-        setCartFabStatus()
-        fabFavouriteBtnAction()
-        fabCartBtnAction()
 
         binding.apply {
             detailToolbar.setNavigationIcon(R.drawable.back_icon)
@@ -81,7 +79,6 @@ class DetailFragment @Inject constructor() : BaseFragment() {
 
         viewPagerAdapter.setData(posters = slider)
         setIndicator(slider.size)
-        viewModel.getSingleProduct(args.currentProduct.id)
         job = lifecycleScope.launchWhenCreated {
             viewModel.singleProduct.collect {
                 binding.apply {
@@ -101,6 +98,8 @@ class DetailFragment @Inject constructor() : BaseFragment() {
                             detailTvOverview.text = it.data.description
 
 
+                            fabFavouriteBtnAction(it.data)
+                            fabCartBtnAction()
                         }
                         is Resource.Error -> {
 
@@ -179,58 +178,33 @@ class DetailFragment @Inject constructor() : BaseFragment() {
         }
     }
 
-    private fun fabFavouriteBtnAction() {
+    private fun fabFavouriteBtnAction(product: ProductResponseItem) {
         binding.apply {
             detailFavourite.setOnClickListener {
-                if (!args.currentProduct.isFav) {
-                    val product = args.currentProduct
+                if (!product.isFav) {
                     product.isFav = true
                     viewModel.updateProduct(product)
                     detailFavourite.setImageResource(R.drawable.ic_round_favorite)
-                } else if (args.currentProduct.isFav) {
-                    val product = args.currentProduct
+                    Toast.makeText(activity, " Add to Favourite", Toast.LENGTH_SHORT).show()
+                } else if (product.isFav) {
                     product.isFav = false
                     viewModel.updateProduct(product)
                     detailFavourite.setImageResource(R.drawable.ic_round_favorite_border)
+                    Toast.makeText(activity, "Removed from favourite", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
+
 
     private fun fabCartBtnAction() {
         binding.apply {
             detailCart.setOnClickListener {
-                if (!args.currentProduct.isCart) {
-                    val product = args.currentProduct
-                    product.isCart = true
-                    viewModel.addOrUpdateCartProduct(product.id)
-                    detailCart.setImageResource(R.drawable.ic_round_add_shopping_cart)
-                } else if (args.currentProduct.isCart) {
-                    val product = args.currentProduct
-                    product.isCart = false
-                    viewModel.addOrUpdateCartProduct(product.id)
-                    detailCart.setImageResource(R.drawable.ic_round_remove_shopping_cart)
-                }
+
             }
-
         }
     }
 
-    private fun setFavouriteFabStatus() {
-        if (args.currentProduct.isFav) {
-            binding.detailFavourite.setImageResource(R.drawable.ic_round_favorite)
-        } else {
-            binding.detailFavourite.setImageResource(R.drawable.ic_round_favorite_border)
-        }
-    }
-
-    private fun setCartFabStatus() {
-        if (args.currentProduct.isCart) {
-            binding.detailCart.setImageResource(R.drawable.ic_round_add_shopping_cart)
-        } else {
-            binding.detailCart.setImageResource(R.drawable.ic_round_remove_shopping_cart)
-        }
-    }
 
     private fun setUpRecyclerView() {
         binding.apply {

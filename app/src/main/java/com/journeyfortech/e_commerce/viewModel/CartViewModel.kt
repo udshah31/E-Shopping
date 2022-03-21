@@ -1,16 +1,16 @@
 package com.journeyfortech.e_commerce.viewModel
 
 import android.widget.TextView
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.journeyfortech.e_commerce.data.db.CartEntity
-import com.journeyfortech.e_commerce.data.db.Favourite
+import com.journeyfortech.e_commerce.data.db.Cart
+import com.journeyfortech.e_commerce.data.db.Products
 import com.journeyfortech.e_commerce.data.model.product.ProductResponseItem
 import com.journeyfortech.e_commerce.repository.ECommerceRepository
+import com.journeyfortech.e_commerce.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -20,79 +20,69 @@ class CartViewModel @Inject constructor(
     private val repository: ECommerceRepository
 ) : ViewModel() {
 
-    val getAllProducts: LiveData<List<Favourite>>
+    private val _cart = MutableStateFlow<Resource<List<Cart>>>(Resource.Loading())
+    val cart = _cart.asStateFlow()
 
-    val getAllFavoriteProducts: LiveData<List<Favourite>>
-
-    val getAllCart: LiveData<List<CartEntity>>
-
-    val allPriceLiveData: MutableLiveData<String> = MutableLiveData()
+    private val _allPrice = MutableStateFlow<String>("")
+    val allPrice = _allPrice.asStateFlow()
 
     init {
-        getAllProducts = repository.getAllProducts
-        getAllFavoriteProducts = repository.getAllFavProducts
-        getAllCart = repository.getAllCart
+        getAllCart()
     }
 
-    fun findItemsWithIds(ids: List<Int>) = repository.findItemsWithIds(ids)
+    fun findItemWithIds(ids: List<Int>) = repository.findItemsWithIds(ids)
 
-    fun updateAllFavouriteTOFalse() {
-        viewModelScope.launch(Dispatchers.Default) {
-            repository.updateAllFavouriteTOFalse()
-        }
+    private fun getAllCart() = viewModelScope.launch {
+        repository.getAllCart
+            .onStart {
+                _cart.value = Resource.Loading()
+            }.catch { e ->
+                _cart.value = Resource.Error(e.toString())
+            }.collect { response ->
+                _cart.value = Resource.Success(response)
+            }
     }
 
-    fun insertProduct(favourite: Favourite) {
-        viewModelScope.launch (Dispatchers.Default){
-            repository.insertProduct(favourite)
-        }
+    fun updateAllFavouriteToFalse() = viewModelScope.launch {
+        repository.updateAllFavouriteToFalse()
     }
 
-    fun deleteProduct(favourite: Favourite) {
-        viewModelScope.launch(Dispatchers.Default) {
-            repository.deleteProduct(favourite)
-        }
+    fun insertProduct(products: Products) = viewModelScope.launch {
+        repository.insetProduct(products)
     }
 
-    fun deleteAll() {
-        viewModelScope.launch(Dispatchers.Default) {
-            repository.deleteAll()
-        }
+    fun deleteProduct(products: ProductResponseItem) = viewModelScope.launch {
+        repository.deleteProduct(products)
     }
 
-    fun updateProduct(productResponseItem: ProductResponseItem) {
-        viewModelScope.launch(Dispatchers.Default) {
-            repository.updateProduct(productResponseItem)
-        }
+    fun deleteAll() = viewModelScope.launch {
+        repository.deleteAll()
     }
 
-    private suspend fun findCartItemId(id: Int): CartEntity? {
+
+
+    private suspend fun findCartItemId(id: Int): Cart? {
         return repository.findCartItemId(id)
     }
 
-    fun deleteCartItem(cartEntity: CartEntity) {
-        viewModelScope.launch (Dispatchers.Default){
-            repository.deleteCart(cartEntity)
-        }
+    fun deleteCartItem(cart: Cart) = viewModelScope.launch {
+        repository.deleteCartItem(cart)
     }
 
-    fun deleteAllCart() {
-        viewModelScope.launch(Dispatchers.Default) {
-            repository.deleteAll()
-        }
-    }
+    fun deleteAllCart() = viewModelScope.launch { repository.deleteAllCart() }
+
 
     fun addOrUpdateCartProduct(id: Int) {
-        viewModelScope.launch (Dispatchers.Default){
+        viewModelScope.launch {
             val cart = repository.findCartItemId(id)
             val product = repository.findCartItemId(id)
 
-            if (cart?.cartQty ?: 0 < product?.cartQty?.toInt()!!) {
+            if (cart?.cartQuantity ?: 0 < product?.cartQuantity!!) {
                 if (cart != null) {
-                    cart.cartQty.plus(1)
+                    cart.cartQuantity.plus(1)
                     repository.updateCart(cart)
                 } else {
-                    val cartEntity = CartEntity(id, 1)
+                    val cartEntity = Cart(id, 1)
                     repository.insertCart(cartEntity)
                 }
             }
@@ -107,7 +97,7 @@ class CartViewModel @Inject constructor(
     ) {
 
         viewModelScope.launch {
-            val quantity = findCartItemId(id)?.cartQty ?: 0
+            val quantity = findCartItemId(id)?.cartQuantity ?: 0
             val textFormat = "Price : ${price.toInt().times(quantity)}"
             priceTextView.text = textFormat
             cartQuantityTextView.text = quantity.toString()
@@ -118,62 +108,59 @@ class CartViewModel @Inject constructor(
     fun handleTotalPriceBasedListSize(cartList: MutableList<ProductResponseItem>) {
         viewModelScope.launch {
             var price = 0
-            for (i in 0..cartList.size - 1) {
+            for (i in 0 until cartList.size) {
                 val currentElement = cartList[i]
                 val findCartItemId = findCartItemId(currentElement.id)
                 if (findCartItemId != null) {
-                    val quantity = findCartItemId.cartQty
+                    val quantity = findCartItemId.cartQuantity
                     price += currentElement.price.toInt() * quantity
                 }
             }
-            allPriceLiveData.postValue(price.toString().plus(" Ron"))
+            _allPrice.value = price.toString().plus(" Ron")
         }
     }
 
 
-
-
-    fun handleIncrementButtonBasedOnQuantity(id: Int, quantityTextView: TextView) {
-        viewModelScope.launch(Dispatchers.Default) {
-            val cart = repository.findCartItemId(id)
-            val product = repository.findCartItemId(id)
-            if (cart?.cartQty ?: 0 < product?.cartQty!!) {
-                cart!!.cartQty.plus(1)
-                withContext(Dispatchers.Main) {
-                    quantityTextView.text = cart.cartQty.toString()
-                }
-                repository.updateCart(cart)
-            }
-        }
-    }
-
+     fun handleIncrementButtonBasedOnQuantity(id: Int, quantityTextView: TextView) {
+         viewModelScope.launch {
+             val cart = repository.findCartItemId(id)
+             val product = repository.findCartItemId(id)
+             if (cart?.cartQuantity ?: 0 < product?.cartQuantity!!) {
+                 cart!!.cartQuantity.plus(1)
+                 withContext(Dispatchers.Main) {
+                     quantityTextView.text = cart.cartQuantity.toString()
+                 }
+                 repository.updateCart(cart)
+             }
+         }
+     }
     fun handleDecrementButton(id: Int, quantityTextView: TextView) {
         viewModelScope.launch(Dispatchers.Default) {
             val cart = repository.findCartItemId(id)
-            if (cart!!.cartQty > 1) {
-                cart.cartQty.minus(1)
+            if (cart!!.cartQuantity > 1) {
+                cart.cartQuantity.minus(1)
                 withContext(Dispatchers.Main) {
-                    quantityTextView.text = cart.cartQty.toString()
+                    quantityTextView.text = cart.cartQuantity.toString()
                 }
                 repository.updateCart(cart)
             }
         }
     }
 
-    fun buyButtonAction(cartList: MutableList<ProductResponseItem>, actionAfterDone: () -> Unit) {
-        viewModelScope.launch(Dispatchers.Default) {
-            for (i in 0..cartList.size - 1) {
-                val currentElementCart = cartList[i]
-                val cartItem = findCartItemId(currentElementCart.id)
-                val product = repository.findItemWithId(currentElementCart.id)
-                val quantity = cartItem?.cartQty
-                product?.quantity = currentElementCart.quantity.minus(quantity!!)
-                repository.updateProductEntity(product!!)
-            }
-            repository.deleteAllCart()
-            withContext(Dispatchers.Main) {
-                actionAfterDone()
-            }
-        }
-    }
+     fun buyButtonAction(cartList: MutableList<ProductResponseItem>, actionAfterDone: () -> Unit) {
+         viewModelScope.launch(Dispatchers.Default) {
+             for (i in 0 until cartList.size) {
+                 val currentElementCart = cartList[i]
+                 val cartItem = findCartItemId(currentElementCart.id)
+                 val product = repository.findItemWithId(currentElementCart.id)
+                 val quantity = cartItem?.cartQuantity
+                 product?.quantity = currentElementCart.quantity.minus(quantity!!)
+                 repository.updateProductEntity(product!!)
+             }
+             repository.deleteAllCart()
+             withContext(Dispatchers.Main) {
+                 actionAfterDone()
+             }
+         }
+     }
 }

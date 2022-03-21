@@ -8,7 +8,6 @@ import android.widget.TextView
 import androidx.core.text.HtmlCompat
 import androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -16,15 +15,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.journeyfortech.e_commerce.R
-import com.journeyfortech.e_commerce.data.db.CartEntity
+import com.journeyfortech.e_commerce.data.db.Cart
 import com.journeyfortech.e_commerce.data.model.product.ProductResponseItem
-import com.journeyfortech.e_commerce.data.model.product.Rating
 import com.journeyfortech.e_commerce.databinding.FragmentCartBinding
 import com.journeyfortech.e_commerce.ui.HomeActivity
 import com.journeyfortech.e_commerce.ui.adapter.CartAdapter
 import com.journeyfortech.e_commerce.ui.listeners.QuantityListener
+import com.journeyfortech.e_commerce.utils.Resource
 import com.journeyfortech.e_commerce.viewModel.CartViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collect
 
 @AndroidEntryPoint
 class CartFragment : BaseFragment(), QuantityListener {
@@ -74,9 +74,9 @@ class CartFragment : BaseFragment(), QuantityListener {
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.layoutPosition
-                val id = cartAdapter.getCartId(position)
-                val qty = cartAdapter.getCartQty(position)
-                viewModel.deleteCartItem(CartEntity(id,qty))
+                val id = cartAdapter.getProductId(position)
+                val qty = cartAdapter.getProductQty(position)
+                viewModel.deleteCartItem(Cart(id, qty))
                 Snackbar.make(view, "Successfully Removed", Snackbar.LENGTH_LONG).show()
             }
 
@@ -87,40 +87,53 @@ class CartFragment : BaseFragment(), QuantityListener {
         }
 
         lifecycleScope.launchWhenCreated {
-            viewModel.getAllCart.observe(viewLifecycleOwner, Observer {
+            viewModel.cart.collect {
+                when (it) {
 
-                if (it.isEmpty()) {
-                    binding.cartEmpty.root.visibility = View.VISIBLE
-                    binding.rvCart.visibility = View.INVISIBLE
-                } else {
-                    binding.rvCart.visibility = View.VISIBLE
-                    val ids = it.map { element ->
-                        element.cartId
-                    }
+                    is Resource.Success -> {
+                        if (it.data!!.isEmpty()) {
+                            binding.cartEmpty.root.visibility = View.VISIBLE
+                            binding.rvCart.visibility = View.INVISIBLE
+                        } else {
+                            binding.rvCart.visibility = View.VISIBLE
 
-                    viewModel.findItemsWithIds(ids).observe(viewLifecycleOwner
-                    ) { productEntities ->
-                        productEntities.map { fav ->
-                            ProductResponseItem(
-                                fav.description!!,
-                                fav.id!!,
-                                fav.image!!,
-                                fav.price!!,
-                                fav.droppedPrice!!,
-                                fav.quantity!!,
-                                Rating(id, id.toDouble()),
-                                fav.title!!,
-                                fav.isFav!!,
-                                fav.isCart
-                            )
+                            val ids = it.data.map { element ->
+                                element.cartId
+                            }
+                            viewModel.findItemWithIds(ids as List<Int>).collect { product ->
+                                val cartProduct = product.map { item ->
+                                    ProductResponseItem(
+                                        item.description!!,
+                                        item.id!!,
+                                        item.image!!,
+                                        item.price!!,
+                                        item.droppedPrice!!,
+                                        item.quantity!!,
+                                        item.rating!!,
+                                        item.title!!,
+                                        item.isFav!!,
+                                        item.isCart!!
+                                    )
+                                }
+
+                                cartAdapter.setData(cartProduct)
+                            }
+
                         }
                     }
+
+                    is Resource.Error -> {
+
+                    }
+
+                    is Resource.Loading -> {
+
+                    }
                 }
-            })
+            }
         }
 
     }
-
 
 
     private fun setUpRecyclerView() {
@@ -132,11 +145,11 @@ class CartFragment : BaseFragment(), QuantityListener {
     }
 
     override fun onQuantityAdded(id: Int, quantityTextView: TextView) {
-        return viewModel.handleIncrementButtonBasedOnQuantity(id, quantityTextView)
+        //
     }
 
     override fun onQuantityRemoved(id: Int, quantityTextView: TextView) {
-        return viewModel.handleDecrementButton(id, quantityTextView)
+        //
     }
 
 

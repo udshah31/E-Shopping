@@ -1,13 +1,11 @@
 package com.journeyfortech.e_commerce.data.db
 
-import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import kotlinx.parcelize.Parcelize
+import com.journeyfortech.e_commerce.data.model.product.Rating
 
-@Entity(tableName = "favourite")
-@Parcelize
-data class Favourite(
+@Entity(tableName = "product")
+data class Products(
     @PrimaryKey(autoGenerate = true)
     var id: Int? = null,
     var title: String? = null,
@@ -15,9 +13,8 @@ data class Favourite(
     var price: Double? = null,
     var droppedPrice: Double? = null,
     var quantity: Int? = null,
-    var rating: Double? = null,
-    var ratingReview: Int? = null,
+    var rating: Rating? = null,
     var image: String? = null,
-    var isFav: Boolean? = null,
-    var isCart: Boolean
-) : Parcelable
+    var isCart: Boolean? = null,
+    var isFav: Boolean? = null
+)

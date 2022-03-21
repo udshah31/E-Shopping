@@ -17,6 +17,7 @@ import com.journeyfortech.e_commerce.R
 import com.journeyfortech.e_commerce.databinding.FragmentFavouriteBinding
 import com.journeyfortech.e_commerce.ui.HomeActivity
 import com.journeyfortech.e_commerce.ui.adapter.FavouriteAdapter
+import com.journeyfortech.e_commerce.utils.Resource
 import com.journeyfortech.e_commerce.viewModel.FavouriteViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
@@ -58,7 +59,6 @@ class FavouriteFragment @Inject constructor() : BaseFragment() {
             rvFav.layoutManager = LinearLayoutManager(activity)
             favouriteAdapter.setOnItemClickListener {
                 val bundle = Bundle().apply {
-                    putParcelable("fav", it)
                 }
                 findNavController().navigate("")
             }
@@ -76,9 +76,9 @@ class FavouriteFragment @Inject constructor() : BaseFragment() {
             }
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val position = viewHolder.adapterPosition
+                val position = viewHolder.layoutPosition
                 val item = favouriteAdapter.getAdapterPosition(position)
-               /* viewModel.deleteFavById(item.id!!)*/
+
                 Snackbar.make(view, "Successfully Removed", Snackbar.LENGTH_LONG).show()
             }
 
@@ -88,17 +88,28 @@ class FavouriteFragment @Inject constructor() : BaseFragment() {
             attachToRecyclerView(binding.rvFav)
         }
 
-        /*lifecycleScope.launchWhenCreated {
-            viewModel.getAllFav().collect {
-                if (it.isEmpty()) {
-                    binding.favouriteEmpty.root.visibility = View.VISIBLE
-                    binding.rvFav.visibility = View.INVISIBLE
-                } else {
-                    binding.rvFav.visibility = View.VISIBLE
-                    favouriteAdapter.setData(it)
+        lifecycleScope.launchWhenCreated {
+            viewModel.favourite.collect {
+                when(it){
+                    is Resource.Loading ->{
+                        uiCommunicationListener.displayProgressBar(true)
+                    }
+                    is Resource.Success -> {
+                        uiCommunicationListener.displayProgressBar(false)
+                        if (it.data!!.isEmpty()) {
+                            binding.favouriteEmpty.root.visibility = View.VISIBLE
+                            binding.rvFav.visibility = View.INVISIBLE
+                        } else {
+                            binding.rvFav.visibility = View.VISIBLE
+                            favouriteAdapter.setData(it.data)
+                        }
+                    }
+                    is Resource.Error -> {
+
+                    }
                 }
             }
-        }*/
+        }
 
     }
 

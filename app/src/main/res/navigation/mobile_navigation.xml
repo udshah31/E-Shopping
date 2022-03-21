@@ -29,8 +29,9 @@
         android:id="@+id/detailFragment"
         android:name="com.journeyfortech.e_commerce.ui.fragments.DetailFragment"
         tools:layout="@layout/fragment_detail" >
+
         <argument
-            android:name="currentProduct"
+            android:name="product"
             app:argType="com.journeyfortech.e_commerce.data.model.product.ProductResponseItem" />
     </fragment>
 

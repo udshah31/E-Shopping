@@ -1,7 +1,6 @@
 package com.journeyfortech.e_commerce.ui.adapter
 
 
-import android.annotation.SuppressLint
 import android.graphics.Paint
 import android.view.LayoutInflater
 import android.view.View
@@ -22,16 +21,16 @@ class CartAdapter : RecyclerView.Adapter<CartAdapter.ViewHolder>() {
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
         private val binding = ItemCartBinding.bind(itemView)
-        fun bind(cartEntity: ProductResponseItem) {
-            binding.tvCartTitle.text = cartEntity.title
-            binding.tvCartDescription.text = cartEntity.description
-            Glide.with(itemView).load(cartEntity.image).into(binding.ivCart)
+        fun bind(product: ProductResponseItem) {
+            binding.tvCartTitle.text = product.title
+            binding.tvCartDescription.text = product.description
+            Glide.with(itemView).load(product.image).into(binding.ivCart)
             binding.tvCartDroppedPrice.paintFlags =
                 binding.tvCartDroppedPrice.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-            binding.tvQuantity.text = cartEntity.quantity.toString()
+            binding.tvQuantity.text = product.quantity.toString()
 
-            incrementCartQuantity(cartEntity, binding)
-            decrementCartQuantity(cartEntity, binding)
+            incrementCartQuantity(product, binding)
+            decrementCartQuantity(product, binding)
         }
 
     }
@@ -51,25 +50,23 @@ class CartAdapter : RecyclerView.Adapter<CartAdapter.ViewHolder>() {
         holder.itemView.setOnClickListener {
             onItemClickListener?.let { it(currentItem) }
         }
-
-
     }
 
     private fun incrementCartQuantity(
-        productResponseItem: ProductResponseItem,
+        cart: ProductResponseItem,
         binding: ItemCartBinding
     ) {
         binding.addCartQuantity.setOnClickListener {
-            listener.onQuantityAdded(productResponseItem.id, binding.tvQuantity)
+            listener.onQuantityAdded(cart.id, binding.tvQuantity)
         }
     }
 
     private fun decrementCartQuantity(
-        productResponseItem: ProductResponseItem,
+        cart: ProductResponseItem,
         binding: ItemCartBinding
     ) {
         binding.removeCartQuantity.setOnClickListener {
-            listener.onQuantityAdded(productResponseItem.id, binding.tvQuantity)
+            listener.onQuantityAdded(cart.id, binding.tvQuantity)
         }
     }
 
@@ -93,12 +90,12 @@ class CartAdapter : RecyclerView.Adapter<CartAdapter.ViewHolder>() {
         return cartList[position]
     }
 
-    fun getCartId(position: Int): Int {
+    fun getProductId(position: Int): Int {
         val currentProduct: ProductResponseItem = cartList[position]
         return currentProduct.quantity
     }
 
-    fun getCartQty(position: Int): Int {
+    fun getProductQty(position: Int): Int {
         val currentProduct: ProductResponseItem = cartList[position]
         return currentProduct.quantity
     }

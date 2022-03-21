@@ -1,26 +1,28 @@
 package com.journeyfortech.e_commerce.viewModel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.journeyfortech.e_commerce.data.db.CartEntity
-import com.journeyfortech.e_commerce.data.db.Favourite
+import com.journeyfortech.e_commerce.data.db.Cart
+import com.journeyfortech.e_commerce.data.db.Products
 import com.journeyfortech.e_commerce.data.model.product.ProductResponseItem
 import com.journeyfortech.e_commerce.repository.ECommerceRepository
+import com.journeyfortech.e_commerce.utils.Constants.PRODUCT_ID
 import com.journeyfortech.e_commerce.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
-    private val repository: ECommerceRepository
+    private val repository: ECommerceRepository,
+    state: SavedStateHandle
 ) : ViewModel() {
 
-    private val _singleProduct =
-        MutableStateFlow<Resource<ProductResponseItem>>(Resource.Loading())
+    private val productId = state.get<ProductResponseItem>(PRODUCT_ID)
+
+    private val _singleProduct = MutableStateFlow<Resource<ProductResponseItem>>(Resource.Loading())
     val singleProduct = _singleProduct.asStateFlow()
 
 
@@ -28,17 +30,15 @@ class DetailViewModel @Inject constructor(
         MutableStateFlow<Resource<List<ProductResponseItem>>>(Resource.Loading())
     val products = _products.asStateFlow()
 
-    val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        throwable.printStackTrace()
-    }
 
 
     init {
+        getSingleProduct(productId!!.id)
+        //isFavourite(productId.id)
         getProducts()
     }
 
-
-    fun getSingleProduct(productId: Int) = viewModelScope.launch {
+    private fun getSingleProduct(productId: Int) = viewModelScope.launch {
         repository.getSingleProduct(productId)
             .onStart {
                 _singleProduct.value = Resource.Loading()
@@ -61,37 +61,28 @@ class DetailViewModel @Inject constructor(
     }
 
 
+
+
+
     //database
-    fun insertFav(favourite: Favourite) = viewModelScope.launch {
-        repository.insertProduct(favourite)
-    }
 
-    fun updateProduct(productResponseItem: ProductResponseItem) {
-        viewModelScope.launch {
-            repository.updateProduct(productResponseItem)
-        }
-    }
-
-    fun getAllFav() = repository.getAllFavProducts
-
-
-    fun deleteFav(favourite: Favourite) = viewModelScope.launch {
-        repository.deleteProduct(favourite)
+    fun updateProduct(products: ProductResponseItem) = viewModelScope.launch {
+        repository.updateProduct(products)
     }
 
     //cart
 
     fun addOrUpdateCartProduct(id: Int) {
-        viewModelScope.launch(Dispatchers.Default + coroutineExceptionHandler) {
+        viewModelScope.launch {
             val cart = repository.findCartItemId(id)
             val product = repository.findCartItemId(id)
 
-            if (cart?.cartQty ?: 0 < product?.cartQty!!) {
+            if (cart?.cartQuantity ?: 0 < product?.cartQuantity!!) {
                 if (cart != null) {
-                    cart.cartQty.plus(1)
+                    cart.cartQuantity.plus(1)
                     repository.updateCart(cart)
                 } else {
-                    val cartEntity = CartEntity(id, 1)
+                    val cartEntity = Cart(id, 1)
                     repository.insertCart(cartEntity)
                 }
             }

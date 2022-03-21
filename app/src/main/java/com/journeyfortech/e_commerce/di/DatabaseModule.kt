@@ -26,7 +26,7 @@ object DatabaseModule {
 
     @Singleton
     @Provides
-    fun provideFavDao(database: AppDatabase) = database.favDao()
+    fun provideFavDao(database: AppDatabase) = database.productDao()
 
     @Singleton
     @Provides

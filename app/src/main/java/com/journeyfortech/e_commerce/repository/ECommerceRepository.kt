@@ -1,10 +1,9 @@
 package com.journeyfortech.e_commerce.repository
 
-import androidx.lifecycle.LiveData
 import com.journeyfortech.e_commerce.data.api.ApiService
 import com.journeyfortech.e_commerce.data.db.AppDatabase
-import com.journeyfortech.e_commerce.data.db.CartEntity
-import com.journeyfortech.e_commerce.data.db.Favourite
+import com.journeyfortech.e_commerce.data.db.Cart
+import com.journeyfortech.e_commerce.data.db.Products
 import com.journeyfortech.e_commerce.data.model.product.ProductResponseItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -30,56 +29,47 @@ class ECommerceRepository @Inject constructor(
 
     //database
 
-    val getAllProducts: LiveData<List<Favourite>> = appDatabase.favDao().getAllProducts()
+    val getAllProducts: Flow<List<Products>> = appDatabase.productDao().getAllProducts()
 
-    val getAllFavProducts: LiveData<List<Favourite>> = appDatabase.favDao().getAllFavProducts()
+    val getAllFavouriteProducts: Flow<List<Products>> =
+        appDatabase.productDao().getAllFavoriteProducts()
 
-    fun findItemsWithIds(ids: List<Int>): LiveData<List<Favourite>> {
-        return appDatabase.favDao().findItemsWithIds(ids)
+    fun findItemsWithIds(ids: List<Int>): Flow<List<Products>> =
+        appDatabase.productDao().findItemsWithIds(ids)
+
+    fun findItemWithId(id: Int): Products? = appDatabase.productDao().findItemId(id.toString())
+
+    suspend fun updateAllFavouriteToFalse() = appDatabase.productDao().updateAllFavouriteToFalse()
+
+    suspend fun insetProduct(products: Products) = appDatabase.productDao().insertProduct(products)
+
+    suspend fun deleteProduct(products: ProductResponseItem) {
+        val entityFromProduct = products.toEntity()
+        appDatabase.productDao().deleteProduct(entityFromProduct)
     }
 
-    fun findItemWithId(id: Int): Favourite? {
-        return appDatabase.favDao().findItemId(id.toString())
-    }
-
-    suspend fun updateAllFavouriteTOFalse() {
-        appDatabase.favDao().updateAllFavToFalse()
-    }
-
-    suspend fun insertProduct(favourite: Favourite) = appDatabase.favDao().insertFav(favourite)
-
-    suspend fun deleteProduct(favourite: Favourite) = appDatabase.favDao().deleteFav(favourite)
-
-    suspend fun deleteAll() {
-        appDatabase.favDao().deleteAll()
-    }
+    suspend fun deleteAll() = appDatabase.productDao().deleteAll()
 
     suspend fun updateProduct(productResponseItem: ProductResponseItem) {
-        val favEntity = productResponseItem.toEntity()
-        appDatabase.favDao().updateProduct(favEntity)
+        val entityFromProduct = productResponseItem.toEntity()
+        appDatabase.productDao().updateProduct(entityFromProduct)
     }
 
-    suspend fun updateProductEntity(favourite: Favourite) {
-        appDatabase.favDao().updateProduct(favourite)
-    }
+    suspend fun updateProductEntity(products: Products) =
+        appDatabase.productDao().updateProduct(products)
 
 
     //cart
-    val getAllCart: LiveData<List<CartEntity>> = appDatabase.cartDao().getAllCart()
+    val getAllCart: Flow<List<Cart>> = appDatabase.cartDao().getAllCart()
 
-    suspend fun insertCart(cartEntity: CartEntity) = appDatabase.cartDao().insertCart(cartEntity)
+    suspend fun insertCart(cart: Cart) = appDatabase.cartDao().insertCart(cart)
 
-    suspend fun updateCart(cartEntity: CartEntity) = appDatabase.cartDao().updateCart(cartEntity)
+    suspend fun updateCart(cart: Cart) = appDatabase.cartDao().updateCart(cart)
 
-    suspend fun deleteCart(cartEntity: CartEntity) = appDatabase.cartDao().deleteCart(cartEntity)
+    suspend fun deleteCartItem(cart: Cart) = appDatabase.cartDao().deleteCartItem(cart)
 
-    suspend fun deleteAllCart() {
-        appDatabase.cartDao().deleteAllCart()
-    }
+    suspend fun deleteAllCart() = appDatabase.cartDao().deleteAllCart()
 
-    suspend fun findCartItemId(id: Int): CartEntity? {
-        return appDatabase.cartDao().findCartItemId(id)
-    }
-
+    suspend fun findCartItemId(id: Int): Cart? = appDatabase.cartDao().findCartItemId(id)
 
 }

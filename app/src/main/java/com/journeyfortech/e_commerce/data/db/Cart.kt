@@ -4,9 +4,8 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "cart")
-data class CartEntity(
+data class Cart(
     @PrimaryKey
-    var cartId: Int,
-
-    var cartQty: Int,
+    var cartId: Int? = null,
+    var cartQuantity: Int
 )
