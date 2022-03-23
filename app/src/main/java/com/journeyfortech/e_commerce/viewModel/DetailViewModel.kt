@@ -4,7 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.journeyfortech.e_commerce.data.db.Cart
-import com.journeyfortech.e_commerce.data.db.Products
+import com.journeyfortech.e_commerce.data.db.Favourite
 import com.journeyfortech.e_commerce.data.model.product.ProductResponseItem
 import com.journeyfortech.e_commerce.repository.ECommerceRepository
 import com.journeyfortech.e_commerce.utils.Constants.PRODUCT_ID
@@ -30,11 +30,21 @@ class DetailViewModel @Inject constructor(
         MutableStateFlow<Resource<List<ProductResponseItem>>>(Resource.Loading())
     val products = _products.asStateFlow()
 
+    /* private val _isFavourite = MutableStateFlow(false)
+     val isFavourite = _isFavourite.asStateFlow()
+
+     private val _isFavoriteLoading = MutableStateFlow(false)
+     val isFavoriteLoading = _isFavoriteLoading.asStateFlow()
+
+     private val _isCart = MutableStateFlow<Boolean>(false)
+     val isCart = _isCart.asStateFlow()
+
+     private val _isCartLoading = MutableStateFlow<Boolean>(false)
+     val isCartLoading = _isCartLoading.asStateFlow()*/
 
 
     init {
         getSingleProduct(productId!!.id)
-        //isFavourite(productId.id)
         getProducts()
     }
 
@@ -60,33 +70,65 @@ class DetailViewModel @Inject constructor(
             }
     }
 
+    fun deleteCartById(id: Int) = viewModelScope.launch {
+        repository.deleteCartById(id)
+    }
 
 
+    fun deleteFavouriteById(id: Int) = viewModelScope.launch {
+        repository.deleteFavouriteById(id)
+    }
 
+
+    /*private fun isFavourite(id: Int) = viewModelScope.launch {
+        _isFavoriteLoading.value = true
+        repository.getFavouriteItem(id)
+            .catch {
+                _isFavoriteLoading.value = false
+            }.collect {
+                _isFavourite.value = it?.isFav!!
+                _isFavoriteLoading.value = false
+            }
+    }
+
+
+    fun onFavouriteClicked() = viewModelScope.launch {
+        _isFavoriteLoading.value = true
+        if (_isFavourite.value) {
+            val delete = deleteFavouriteById(productId!!.id)
+            _isFavourite.value = delete.equals(1)
+        } else {
+            val savedId = singleProduct.value.data!!.let {
+                val item = Favourite(
+                    id = it.id,
+                    image = it.image,
+                    description = it.description,
+                    price = it.price,
+                    droppedPrice = it.droppedPrice,
+                    title = it.title,
+                    quantity = it.quantity,
+                    rating = it.rating,
+                    isFav = true,
+                )
+                insertFavourite(item)
+            }
+            _isFavourite.value = savedId.equals(productId?.id)
+        }
+        _isFavoriteLoading.value = false
+    }*/
 
     //database
 
-    fun updateProduct(products: ProductResponseItem) = viewModelScope.launch {
-        repository.updateProduct(products)
+    fun getAllFavourite() = repository.getAllFavourite
+
+    fun insertFavourite(favourite: Favourite) = viewModelScope.launch {
+        repository.insetFavourite(favourite)
     }
 
+
     //cart
-
-    fun addOrUpdateCartProduct(id: Int) {
-        viewModelScope.launch {
-            val cart = repository.findCartItemId(id)
-            val product = repository.findCartItemId(id)
-
-            if (cart?.cartQuantity ?: 0 < product?.cartQuantity!!) {
-                if (cart != null) {
-                    cart.cartQuantity.plus(1)
-                    repository.updateCart(cart)
-                } else {
-                    val cartEntity = Cart(id, 1)
-                    repository.insertCart(cartEntity)
-                }
-            }
-        }
+    fun insertCart(cart: Cart) = viewModelScope.launch {
+        repository.insertCart(cart)
     }
 
     fun getAllCart() = repository.getAllCart

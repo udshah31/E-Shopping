@@ -1,6 +1,6 @@
 package com.journeyfortech.e_commerce.data.model.product
 
-import com.journeyfortech.e_commerce.data.db.Products
+import com.journeyfortech.e_commerce.data.db.Favourite
 import java.io.Serializable
 
 data class ProductResponseItem(
@@ -15,8 +15,8 @@ data class ProductResponseItem(
     var isFav: Boolean,
     var isCart: Boolean
 ) : Serializable {
-    fun toEntity(): Products {
-        return Products(
+    fun toEntity(): Favourite {
+        return Favourite(
             id,
             title,
             description,

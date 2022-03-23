@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.text.HtmlCompat
 import androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY
 import androidx.fragment.app.viewModels
@@ -15,8 +16,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.journeyfortech.e_commerce.R
-import com.journeyfortech.e_commerce.data.db.Cart
-import com.journeyfortech.e_commerce.data.model.product.ProductResponseItem
 import com.journeyfortech.e_commerce.databinding.FragmentCartBinding
 import com.journeyfortech.e_commerce.ui.HomeActivity
 import com.journeyfortech.e_commerce.ui.adapter.CartAdapter
@@ -53,7 +52,7 @@ class CartFragment : BaseFragment(), QuantityListener {
         }
 
         setUpRecyclerView()
-
+        totalPrice()
 
         cartAdapter.setOnItemClickListener {
             val bundle = Bundle().apply {
@@ -74,9 +73,8 @@ class CartFragment : BaseFragment(), QuantityListener {
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.layoutPosition
-                val id = cartAdapter.getProductId(position)
-                val qty = cartAdapter.getProductQty(position)
-                viewModel.deleteCartItem(Cart(id, qty))
+                val item = cartAdapter.getAdapterPosition(position)
+                viewModel.deleteCartById(item.id!!)
                 Snackbar.make(view, "Successfully Removed", Snackbar.LENGTH_LONG).show()
             }
 
@@ -94,30 +92,12 @@ class CartFragment : BaseFragment(), QuantityListener {
                         if (it.data!!.isEmpty()) {
                             binding.cartEmpty.root.visibility = View.VISIBLE
                             binding.rvCart.visibility = View.INVISIBLE
+                            binding.totalLayout.visibility = View.INVISIBLE
                         } else {
                             binding.rvCart.visibility = View.VISIBLE
-
-                            val ids = it.data.map { element ->
-                                element.cartId
-                            }
-                            viewModel.findItemWithIds(ids as List<Int>).collect { product ->
-                                val cartProduct = product.map { item ->
-                                    ProductResponseItem(
-                                        item.description!!,
-                                        item.id!!,
-                                        item.image!!,
-                                        item.price!!,
-                                        item.droppedPrice!!,
-                                        item.quantity!!,
-                                        item.rating!!,
-                                        item.title!!,
-                                        item.isFav!!,
-                                        item.isCart!!
-                                    )
-                                }
-
-                                cartAdapter.setData(cartProduct)
-                            }
+                            binding.totalLayout.visibility = View.VISIBLE
+                            cartAdapter.setData(it.data)
+                            viewModel.totalPrice(cartAdapter.getItems())
 
                         }
                     }
@@ -136,6 +116,16 @@ class CartFragment : BaseFragment(), QuantityListener {
     }
 
 
+    private fun totalPrice() {
+        lifecycleScope.launchWhenCreated {
+            viewModel.totalPrice
+                .collect {
+                    binding.totalPrice.text = it
+                }
+        }
+    }
+
+
     private fun setUpRecyclerView() {
         cartAdapter.listener = this
         binding.rvCart.adapter = cartAdapter
@@ -144,12 +134,15 @@ class CartFragment : BaseFragment(), QuantityListener {
 
     }
 
+
     override fun onQuantityAdded(id: Int, quantityTextView: TextView) {
-        //
+        Toast.makeText(activity,"add",Toast.LENGTH_SHORT).show()
+        return viewModel.quantityIncrement(id, quantityTextView)
     }
 
     override fun onQuantityRemoved(id: Int, quantityTextView: TextView) {
-        //
+        Toast.makeText(activity,"removed",Toast.LENGTH_SHORT).show()
+        return viewModel.quantityDecrease(id, quantityTextView)
     }
 
 

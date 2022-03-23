@@ -5,42 +5,40 @@ import android.graphics.Paint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.journeyfortech.e_commerce.R
-import com.journeyfortech.e_commerce.data.model.product.ProductResponseItem
+import com.journeyfortech.e_commerce.data.db.Cart
 import com.journeyfortech.e_commerce.databinding.ItemCartBinding
 import com.journeyfortech.e_commerce.ui.listeners.QuantityListener
 
 class CartAdapter : RecyclerView.Adapter<CartAdapter.ViewHolder>() {
 
-    private var cartList: MutableList<ProductResponseItem> = mutableListOf()
+    private var cartList: MutableList<Cart> = mutableListOf()
     lateinit var listener: QuantityListener
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
         private val binding = ItemCartBinding.bind(itemView)
-        fun bind(product: ProductResponseItem) {
-            binding.tvCartTitle.text = product.title
-            binding.tvCartDescription.text = product.description
-            Glide.with(itemView).load(product.image).into(binding.ivCart)
+        fun bind(cartEntity: Cart) {
+            binding.tvCartTitle.text = cartEntity.title
+            binding.tvCartDescription.text = cartEntity.description
+            Glide.with(itemView).load(cartEntity.image).into(binding.ivCart)
+            binding.tvCartPrice.text = "Rs." + cartEntity.price.toString()
             binding.tvCartDroppedPrice.paintFlags =
                 binding.tvCartDroppedPrice.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-            binding.tvQuantity.text = product.quantity.toString()
+            binding.tvQuantity.text = cartEntity.quantity.toString()
 
-            incrementCartQuantity(product, binding)
-            decrementCartQuantity(product, binding)
+
+            incrementCartQuantity(cartEntity, binding)
+            decrementCartQuantity(cartEntity, binding)
         }
 
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(
-            DataBindingUtil.inflate(
-                LayoutInflater.from(parent.context),
-                R.layout.item_cart, parent, false
-            )
+            LayoutInflater.from(parent.context).inflate(R.layout.item_cart, parent, false)
         )
     }
 
@@ -50,23 +48,24 @@ class CartAdapter : RecyclerView.Adapter<CartAdapter.ViewHolder>() {
         holder.itemView.setOnClickListener {
             onItemClickListener?.let { it(currentItem) }
         }
+
     }
 
     private fun incrementCartQuantity(
-        cart: ProductResponseItem,
+        cart: Cart,
         binding: ItemCartBinding
     ) {
         binding.addCartQuantity.setOnClickListener {
-            listener.onQuantityAdded(cart.id, binding.tvQuantity)
+            listener.onQuantityAdded(cart.id!!, binding.tvQuantity)
         }
     }
 
     private fun decrementCartQuantity(
-        cart: ProductResponseItem,
+        cart: Cart,
         binding: ItemCartBinding
     ) {
         binding.removeCartQuantity.setOnClickListener {
-            listener.onQuantityAdded(cart.id, binding.tvQuantity)
+            listener.onQuantityAdded(cart.id!!, binding.tvQuantity)
         }
     }
 
@@ -74,32 +73,32 @@ class CartAdapter : RecyclerView.Adapter<CartAdapter.ViewHolder>() {
         return cartList.size
     }
 
-    private var onItemClickListener: ((ProductResponseItem) -> Unit)? = null
+    private var onItemClickListener: ((Cart) -> Unit)? = null
 
-    fun setOnItemClickListener(listener: (ProductResponseItem) -> Unit) {
+    fun setOnItemClickListener(listener: (Cart) -> Unit) {
         onItemClickListener = listener
     }
 
 
-    fun setData(product: List<ProductResponseItem>) {
+    fun setData(product: List<Cart>) {
         this.cartList = product.toMutableList()
         notifyDataSetChanged()
     }
 
-    fun getAdapterPosition(position: Int): ProductResponseItem {
+    fun getAdapterPosition(position: Int): Cart {
         return cartList[position]
     }
 
-    fun getProductId(position: Int): Int {
-        val currentProduct: ProductResponseItem = cartList[position]
-        return currentProduct.quantity
+    /*fun getCartId(position: Int): Int {
+        val currentProduct: Cart = cartList[position]
+        return currentProduct.quantity!!
     }
 
-    fun getProductQty(position: Int): Int {
-        val currentProduct: ProductResponseItem = cartList[position]
-        return currentProduct.quantity
-    }
+    fun getCartQty(position: Int): Int {
+        val currentProduct: Cart = cartList[position]
+        return currentProduct.quantity!!
+    }*/
 
-    fun getItems(): MutableList<ProductResponseItem> = cartList
+     fun getItems(): MutableList<Cart> = cartList
 
 }

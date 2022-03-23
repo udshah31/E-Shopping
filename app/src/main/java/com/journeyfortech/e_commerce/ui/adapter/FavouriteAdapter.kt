@@ -6,7 +6,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
-import com.journeyfortech.e_commerce.data.db.Products
+import com.journeyfortech.e_commerce.data.db.Favourite
 import com.journeyfortech.e_commerce.databinding.ItemFavouriteBinding
 import javax.inject.Inject
 
@@ -14,7 +14,7 @@ class FavouriteAdapter @Inject constructor(
     private var glide: RequestManager
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private var favouriteList = emptyList<Products>()
+    private var favouriteList = emptyList<Favourite>()
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -41,18 +41,18 @@ class FavouriteAdapter @Inject constructor(
         return favouriteList.size
     }
 
-    private var onItemClickListener: ((Products) -> Unit)? = null
-    fun setOnItemClickListener(listener: (Products) -> Unit) {
+    private var onItemClickListener: ((Favourite) -> Unit)? = null
+    fun setOnItemClickListener(listener: (Favourite) -> Unit) {
         onItemClickListener = listener
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    fun setData(products: List<Products>) {
+    fun setData(products: List<Favourite>) {
         this.favouriteList = products
         notifyDataSetChanged()
     }
 
-    fun getAdapterPosition(position: Int): Products {
+    fun getAdapterPosition(position: Int): Favourite {
         return favouriteList[position]
     }
 
