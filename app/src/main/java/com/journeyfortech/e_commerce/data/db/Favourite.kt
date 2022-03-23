@@ -4,8 +4,8 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.journeyfortech.e_commerce.data.model.product.Rating
 
-@Entity(tableName = "product")
-data class Products(
+@Entity(tableName = "favourite")
+data class Favourite(
     @PrimaryKey(autoGenerate = true)
     var id: Int? = null,
     var title: String? = null,

@@ -78,7 +78,7 @@ class FavouriteFragment @Inject constructor() : BaseFragment() {
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.layoutPosition
                 val item = favouriteAdapter.getAdapterPosition(position)
-
+                viewModel.deleteFavouriteById(item.id!!)
                 Snackbar.make(view, "Successfully Removed", Snackbar.LENGTH_LONG).show()
             }
 

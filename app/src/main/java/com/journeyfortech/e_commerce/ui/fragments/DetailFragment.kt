@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.journeyfortech.e_commerce.R
+import com.journeyfortech.e_commerce.data.db.Cart
+import com.journeyfortech.e_commerce.data.db.Favourite
 import com.journeyfortech.e_commerce.data.model.product.ProductResponseItem
 import com.journeyfortech.e_commerce.data.model.slider
 import com.journeyfortech.e_commerce.databinding.FragmentDetailBinding
@@ -26,7 +28,6 @@ import com.journeyfortech.e_commerce.viewModel.DetailViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -42,7 +43,6 @@ class DetailFragment @Inject constructor() : BaseFragment() {
     @Inject
     lateinit var similarItemsAdapter: SimilarProductAdapter
 
-    private var isFav: Boolean = true
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -99,7 +99,9 @@ class DetailFragment @Inject constructor() : BaseFragment() {
 
 
                             fabFavouriteBtnAction(it.data)
-                            fabCartBtnAction()
+                            setFloatStatusFav(it.data.id)
+                            fabCartBtnAction(it.data)
+                            setFloatStatusCart(it.data.id)
                         }
                         is Resource.Error -> {
 
@@ -183,28 +185,101 @@ class DetailFragment @Inject constructor() : BaseFragment() {
             detailFavourite.setOnClickListener {
                 if (!product.isFav) {
                     product.isFav = true
-                    viewModel.updateProduct(product)
+                    val item = Favourite(
+                        product.id,
+                        product.title,
+                        product.description,
+                        product.price,
+                        product.droppedPrice,
+                        product.quantity,
+                        product.rating,
+                        product.image,
+                        product.isCart,
+                        true
+                    )
                     detailFavourite.setImageResource(R.drawable.ic_round_favorite)
-                    Toast.makeText(activity, " Add to Favourite", Toast.LENGTH_SHORT).show()
-                } else if (product.isFav) {
+                    viewModel.insertFavourite(item)
+                    Toast.makeText(activity, "Added To favourite", Toast.LENGTH_SHORT).show()
+                } else {
                     product.isFav = false
-                    viewModel.updateProduct(product)
                     detailFavourite.setImageResource(R.drawable.ic_round_favorite_border)
-                    Toast.makeText(activity, "Removed from favourite", Toast.LENGTH_SHORT).show()
+                    viewModel.deleteFavouriteById(product.id)
+                    Toast.makeText(activity, "Removed From favourite", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
+    private fun setFloatStatusFav(id: Int) {
+        lifecycleScope.launchWhenCreated {
+            viewModel.getAllFavourite()
+                .collect { fav ->
+                    if (fav.isNullOrEmpty()) {
+                        binding.detailFavourite.setImageResource(R.drawable.ic_round_favorite_border)
+                    } else {
+                        fav.map { item ->
+                            if (item.id == id) {
+                                if (item.isFav == true) {
+                                    binding.detailFavourite.setImageResource(R.drawable.ic_round_favorite)
+                                } else {
+                                    binding.detailFavourite.setImageResource(R.drawable.ic_round_favorite_border)
+                                }
+                            }
+                        }
+                    }
+                }
+        }
+    }
 
-    private fun fabCartBtnAction() {
+    private fun fabCartBtnAction(product: ProductResponseItem) {
         binding.apply {
             detailCart.setOnClickListener {
-
+                if (!product.isCart) {
+                    product.isCart = true
+                    val item = Cart(
+                        product.id,
+                        product.title,
+                        product.description,
+                        product.price,
+                        product.droppedPrice,
+                        product.quantity,
+                        product.rating,
+                        product.image,
+                        true,
+                    )
+                    detailCart.setImageResource(R.drawable.ic_round_add_shopping_cart)
+                    viewModel.insertCart(item)
+                    Toast.makeText(activity, "Added To Cart", Toast.LENGTH_SHORT).show()
+                } else {
+                    product.isCart = false
+                    detailCart.setImageResource(R.drawable.ic_round_remove_shopping_cart)
+                    viewModel.deleteCartById(product.id)
+                    Toast.makeText(activity, "Removed From Cart", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 
+    private fun setFloatStatusCart(id: Int) {
+        lifecycleScope.launchWhenCreated {
+            viewModel.getAllCart()
+                .collect { cart ->
+                    if (cart.isNullOrEmpty()) {
+                        binding.detailCart.setImageResource(R.drawable.ic_round_add_shopping_cart)
+                    } else {
+                        cart.map { item ->
+                            if (item.id == id) {
+                                if (item.isCart == true) {
+                                    binding.detailCart.setImageResource(R.drawable.ic_round_remove_shopping_cart)
+                                } else {
+                                    binding.detailCart.setImageResource(R.drawable.ic_round_add_shopping_cart)
+                                }
+                            }
+                        }
+                    }
+                }
+        }
+    }
 
     private fun setUpRecyclerView() {
         binding.apply {

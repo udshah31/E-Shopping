@@ -3,7 +3,7 @@ package com.journeyfortech.e_commerce.repository
 import com.journeyfortech.e_commerce.data.api.ApiService
 import com.journeyfortech.e_commerce.data.db.AppDatabase
 import com.journeyfortech.e_commerce.data.db.Cart
-import com.journeyfortech.e_commerce.data.db.Products
+import com.journeyfortech.e_commerce.data.db.Favourite
 import com.journeyfortech.e_commerce.data.model.product.ProductResponseItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -29,34 +29,17 @@ class ECommerceRepository @Inject constructor(
 
     //database
 
-    val getAllProducts: Flow<List<Products>> = appDatabase.productDao().getAllProducts()
+    val getAllFavourite: Flow<List<Favourite>> = appDatabase.favouriteDao().getAllFavourite()
 
-    val getAllFavouriteProducts: Flow<List<Products>> =
-        appDatabase.productDao().getAllFavoriteProducts()
+    suspend fun insetFavourite(favourite: Favourite) =
+        appDatabase.favouriteDao().insertFavourite(favourite)
 
-    fun findItemsWithIds(ids: List<Int>): Flow<List<Products>> =
-        appDatabase.productDao().findItemsWithIds(ids)
+    suspend fun deleteFavouriteById(id: Int) = appDatabase.favouriteDao().deleteFavouriteById(id)
 
-    fun findItemWithId(id: Int): Products? = appDatabase.productDao().findItemId(id.toString())
+    suspend fun deleteAllFavourite(favourite: Favourite) =
+        appDatabase.favouriteDao().deleteAllFavourite(favourite)
 
-    suspend fun updateAllFavouriteToFalse() = appDatabase.productDao().updateAllFavouriteToFalse()
-
-    suspend fun insetProduct(products: Products) = appDatabase.productDao().insertProduct(products)
-
-    suspend fun deleteProduct(products: ProductResponseItem) {
-        val entityFromProduct = products.toEntity()
-        appDatabase.productDao().deleteProduct(entityFromProduct)
-    }
-
-    suspend fun deleteAll() = appDatabase.productDao().deleteAll()
-
-    suspend fun updateProduct(productResponseItem: ProductResponseItem) {
-        val entityFromProduct = productResponseItem.toEntity()
-        appDatabase.productDao().updateProduct(entityFromProduct)
-    }
-
-    suspend fun updateProductEntity(products: Products) =
-        appDatabase.productDao().updateProduct(products)
+    fun getFavouriteItem(id: Int) = appDatabase.favouriteDao().getFavouriteItem(id)
 
 
     //cart
@@ -64,12 +47,12 @@ class ECommerceRepository @Inject constructor(
 
     suspend fun insertCart(cart: Cart) = appDatabase.cartDao().insertCart(cart)
 
-    suspend fun updateCart(cart: Cart) = appDatabase.cartDao().updateCart(cart)
+    suspend fun updateCartQuantity(cart: Cart) = appDatabase.cartDao().updateCart(cart)
 
-    suspend fun deleteCartItem(cart: Cart) = appDatabase.cartDao().deleteCartItem(cart)
+    suspend fun deleteCart(cart: Cart) = appDatabase.cartDao().deleteCart(cart)
 
-    suspend fun deleteAllCart() = appDatabase.cartDao().deleteAllCart()
+    suspend fun deleteCartById(id: Int) = appDatabase.cartDao().deleteCartById(id)
 
-    suspend fun findCartItemId(id: Int): Cart? = appDatabase.cartDao().findCartItemId(id)
+    fun getCartItem(id: Int) = appDatabase.cartDao().getCartItem(id)
 
 }

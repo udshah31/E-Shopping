@@ -21,12 +21,13 @@ object DatabaseModule {
         context, AppDatabase::class.java,
         "fav_db.db"
     )
+        .allowMainThreadQueries()
         .fallbackToDestructiveMigration()
         .build()
 
     @Singleton
     @Provides
-    fun provideFavDao(database: AppDatabase) = database.productDao()
+    fun provideFavDao(database: AppDatabase) = database.favouriteDao()
 
     @Singleton
     @Provides
